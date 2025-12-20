@@ -1,89 +1,100 @@
 # gscholar
 
-Query Google Scholar using Python.
+Google Scholar 3-Stage Literature Pipeline with EasyScholar ranking filters.
 
+## Features
 
-## Requirements
+- **Stage 1**: Scrape Google Scholar using Playwright (anti-detection)
+- **Stage 2**: Enrich with Crossref API (DOI, journal, abstract)
+- **Stage 3**: Filter by EasyScholar rankings (IF, JCI, SCI partitions)
 
- * Python
- * pdftotext (command line tool)
-
-
-## Installing
-
-```bash
-$ pip install gscholar
-```
-
-##Using gscholar as a command line tool
-
-gscholar provides a command line tool, to use it, just call `gscholar` like:
+## Installation
 
 ```bash
-$ gscholar "albert einstein"
+pip install -e .
+playwright install chromium
 ```
 
-or
+## Quick Start
 
 ```bash
-$ python3 -m gscholar "albert einstein"
+# Basic search (10 pages, with filtering)
+python -m gscholar "machine learning" --pages 1-10 --easyscholar-key "YOUR_KEY" --sciif 5.0
 ```
 
-### Making a simple lookup:
+Output is saved to `output/{timestamp}_{query}/`:
+- `1_gscholar.csv` — Raw Google Scholar results
+- `2_crossref.csv` — Enriched with DOI, journal, abstract
+- `3_easyscholar.csv` — Filtered by ranking criteria
+
+## CLI Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `keyword` | Search terms (required) |
+| `--pages` | Page range, e.g., `1-10` (default: 1) |
+| `--ylo` | Year filter, results from this year onwards |
+| `--proxy` | Proxy URL (e.g., `http://127.0.0.1:7890`) |
+| `--mirror` | Mirror site URL for blocked regions |
+| `--output` | Output directory (default: `./output`) |
+| `--debug` | Show debug output |
+
+### EasyScholar Filters
+
+Requires `--easyscholar-key`.
+
+| Parameter | Description |
+|-----------|-------------|
+| `--easyscholar-key` | EasyScholar API key |
+| `--sciif` | Minimum Impact Factor (IF >= value) |
+| `--jci` | Minimum JCI |
+| `--sci` | SCI partition (e.g., "Q1") |
+| `--sciUpTop` | sciUpTop filter |
+| `--sciBase` | sciBase filter |
+| `--sciUp` | sciUp filter |
+
+### Cookie Management
 
 ```bash
-$ gscholar "some author or title"
+# Refresh cookies (fixes 403/429 errors)
+python -m gscholar --refresh-cookies
+
+# Clear cookies
+python -m gscholar --clear-cookies
 ```
 
-will return the first result from Google Scholar matching this query.
+## Output Columns
 
+### 1_gscholar.csv
+`title`, `author`, `year`, `venue`, `article_url`, `citations`, `snippet`
 
-### Getting more results:
+### 2_crossref.csv
+Adds: `doi`, `journal`, `crossref_authors`, `crossref_date`, `abstract`
 
-```bash
-$ gscholar --all "some author or title"
-```
+### 3_easyscholar.csv
+Adds: `IF`, `JCI`, `SCI`, `sciUpTop`, `sciBase`, `sciUp`
 
-Same as above but returns up to 10 bibtex items. (Use with caution Google will
-assume you're a bot an ban you're IP temporarily)
-
-
-### Querying using a pdf:
-
-```bash
-$ gscholar /path/to/pdf
-```
-
-Will read the pdf to generate a Google Scholar query. It uses this query to show
-the first bibtex result as above.
-
-
-### Renaming a pdf:
-
-```bash
-$ gscholar --rename /path/to/pdf
-```
-
-Will do the same as above but asks you if it should rename the file according
-to the bibtex result. You have to answer with "y", default answer is no.
-
-
-### Getting help:
-
-```bash
-$ gscholar --help
-```
-
-
-## Using gscholar as a python library
-
-Install the gscholar package with `pip install` as described above or copy the
-package somewhere Python can find it.
+## Python API
 
 ```python
 import gscholar
 
-gscholar.query("some author or title")
+results = gscholar.query(
+    "machine learning",
+    pages=[1, 2, 3],
+    ylo=2020,
+)
+
+for r in results:
+    print(f"{r['title']} - {r['year']}")
 ```
 
-will return a list of bibtex items.
+## Troubleshooting
+
+### 429 Too Many Requests
+- Use `--refresh-cookies`
+- Use `--mirror` with a mirror site
+- Wait 10-30 minutes
+
+### Cookies Location
+`~/.gscholar_cookies.json`

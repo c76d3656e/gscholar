@@ -13,6 +13,13 @@ readme = "README.md"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dynamic = ["version"]
+dependencies = [
+    "requests",
+    "fake-useragent",
+    "beautifulsoup4",
+    "curl_cffi",
+    "playwright",
+]
 
 [project.scripts]
 gscholar = "gscholar.__main__:main"
